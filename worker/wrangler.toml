@@ -1,0 +1,8 @@
+name = "peso-coach-backup"
+main = "worker.ts"
+compatibility_date = "2024-09-01"
+
+[[kv_namespaces]]
+binding = "DATA"
+id = "kv_namespace_id_placeholder"
+

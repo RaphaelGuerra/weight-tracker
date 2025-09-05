@@ -1,0 +1,9 @@
+#root { padding: 1rem 0 3rem; }
+.topbar { display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:1rem; }
+.cards { display:grid; grid-template-columns: 1fr; gap: 1rem; }
+@media (min-width: 900px){ .cards { grid-template-columns: 1fr 1fr; } }
+.footer { margin-top: 2rem; opacity: 0.75; font-size: 0.9rem; }
+.modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; }
+.modal { background: var(--pico-card-background-color); padding: 1rem; border-radius: 10px; max-width: 600px; width: 100%; max-height: 80vh; overflow:auto; }
+canvas { background: var(--pico-card-background-color); }
+

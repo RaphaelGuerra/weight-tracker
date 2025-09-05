@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.DS_Store
+.env*
+.wrangler/
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
