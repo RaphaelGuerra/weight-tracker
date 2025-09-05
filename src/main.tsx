@@ -12,7 +12,7 @@ import CheckpointsModal from './components/CheckpointsModal';
 import { AppState, DayLog, ProjectionPoint } from './types';
 import { defaultSettings } from './lib/defaults';
 import { loadState, saveState } from './lib/storage';
-import { getSyncId, loadRemoteMonth, monthFromISO, saveLocalMonthDebounced, saveRemoteMonthDebounced } from './lib/store';
+import { getBaseUrl, getSyncId, loadRemoteMonth, monthFromISO, saveLocalMonthDebounced, saveRemoteMonthDebounced } from './lib/store';
 import { simulateProjection } from './lib/compute';
 
 const loadInitial = (): AppState => {
@@ -28,6 +28,7 @@ function App() {
   const [state, setState] = useState<AppState>(() => loadInitial());
   const [projection, setProjection] = useState<ProjectionPoint[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<'idle'|'loading'|'ok'|'error'>('idle');
 
   const recalc = () => {
     const initialWeight = (() => {
@@ -51,7 +52,7 @@ function App() {
     const monthLogs = s.logs.filter((l) => l.dateISO.startsWith(prefix));
     saveLocalMonthDebounced(month, { logs: monthLogs });
     const syncId = getSyncId();
-    const base = (window as any).__PAGES_BASE__ as string | undefined; // optional runtime override
+    const base = getBaseUrl() ?? undefined;
     if (syncId && base) saveRemoteMonthDebounced(base, syncId, month, { logs: monthLogs });
   };
 
@@ -71,23 +72,27 @@ function App() {
   const onCheckpointsChange = (c: AppState['settings']['checkpoints']) => persist({ ...state, settings: { ...state.settings, checkpoints: c } });
 
   React.useEffect(() => { recalc(); /* initial */ }, []);
-  // On mount, attempt remote month load if configured via global (optional power-user path)
+  // On mount and when active month changes, try remote load if Sync ID is set; fallback to local
   React.useEffect(() => {
     const syncId = getSyncId();
-    const base = (window as any).__PAGES_BASE__ as string | undefined;
-    if (!syncId || !base) return;
-    const month = monthFromISO(state.logs.at(-1)?.dateISO ?? new Date().toISOString());
+    const base = getBaseUrl();
+    if (!syncId || !base) { setSyncStatus('idle'); return; }
+    const month = monthFromISO((state.logs.at(-1)?.dateISO ?? new Date().toISOString()));
+    setSyncStatus('loading');
     loadRemoteMonth(base, syncId, month).then((data) => {
-      if (data && data.logs?.length) {
+      if (data && Array.isArray(data.logs)) {
         const prefix = month + '-';
         const others = state.logs.filter((l) => !l.dateISO.startsWith(prefix));
         const next = { ...state, logs: [...others, ...data.logs].sort((a, b) => a.dateISO.localeCompare(b.dateISO)) };
         setState(next);
         saveState(next);
+        setSyncStatus('ok');
+      } else {
+        setSyncStatus('error'); // fallback to local content (already in state)
       }
-    });
+    }).catch(() => setSyncStatus('error'));
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [monthFromISO((state.logs.at(-1)?.dateISO ?? new Date().toISOString()))]);
 
   return (
     <>

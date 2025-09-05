@@ -1,5 +1,5 @@
 export interface Env {
-  DATA: KVNamespace;
+  COACH: KVNamespace;
   BEARER_TOKEN: string;
 }
 
@@ -13,15 +13,14 @@ export default {
 
     if (request.method === 'POST' && url.pathname === '/backup') {
       const body = await request.text();
-      await env.DATA.put(KEY, body, { metadata: { updatedAt: new Date().toISOString() } });
+      await env.COACH.put(KEY, body, { metadata: { updatedAt: new Date().toISOString() } });
       return new Response(JSON.stringify({ ok: true }), { headers: { 'content-type': 'application/json' } });
     }
     if (request.method === 'GET' && url.pathname === '/restore') {
-      const data = await env.DATA.get(KEY, 'json');
+      const data = await env.COACH.get(KEY, 'json');
       if (!data) return new Response('Not Found', { status: 404 });
       return new Response(JSON.stringify(data), { headers: { 'content-type': 'application/json' } });
     }
     return new Response('Not Found', { status: 404 });
   },
 };
-

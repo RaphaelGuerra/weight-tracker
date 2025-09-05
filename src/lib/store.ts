@@ -1,7 +1,8 @@
 import { DayLog } from '../types';
 
-const SYNC_ID_KEY = 'peso.v1.syncId';
-const DATA_PREFIX = 'peso.v1.data.'; // + YYYY-MM
+const SYNC_ID_KEY = 'coach.v1.syncId';
+const DATA_PREFIX = 'coach.v1.logs.'; // + YYYY-MM
+const BASE_URL_KEY = 'coach.v1.baseUrl';
 
 export type MonthPayload = { logs: DayLog[] };
 
@@ -15,6 +16,14 @@ export function getSyncId(): string | null {
 
 export function setSyncId(id: string | null) {
   if (!id) localStorage.removeItem(SYNC_ID_KEY); else localStorage.setItem(SYNC_ID_KEY, id);
+}
+
+export function getBaseUrl(): string | null {
+  return localStorage.getItem(BASE_URL_KEY);
+}
+
+export function setBaseUrl(url: string | null) {
+  if (!url) localStorage.removeItem(BASE_URL_KEY); else localStorage.setItem(BASE_URL_KEY, url);
 }
 
 export function loadLocalMonth(month: string): MonthPayload | null {
@@ -56,4 +65,3 @@ export function saveRemoteMonthDebounced(baseUrl: string, syncId: string, month:
     } catch { /* ignore */ }
   }, ms);
 }
-

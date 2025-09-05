@@ -29,6 +29,7 @@ App PWA simples para acompanhamento de peso, com projeção não linear e backup
   2. Crie um KV Namespace e substitua `kv_namespace_id_placeholder` em `wrangler.toml`.
   3. Configure o segredo: `wrangler secret put BEARER_TOKEN`.
   4. Deploy: `wrangler deploy`.
+- Em `wrangler.toml`, a binding do KV é `COACH`.
 - Na UI do app, informe a URL do worker e o `BEARER_TOKEN` para usar os botões Backup/Restore.
 
 ## Teste manual (checklist)
@@ -57,4 +58,3 @@ App PWA simples para acompanhamento de peso, com projeção não linear e backup
 
 - Ícones `public/icon-192.png` e `public/icon-512.png` são placeholders; substitua por PNGs reais.
 - Simulação semanal roda 26 semanas por padrão ou até `phase2.endISO`.
-

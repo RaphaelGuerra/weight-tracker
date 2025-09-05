@@ -35,7 +35,7 @@
 
 ## Security & Configuration Tips
 - Do not commit secrets. Worker reads `BEARER_TOKEN` via Wrangler secrets.
-- KV bound to `DATA`. Endpoints: `POST /backup`, `GET /restore` (requires `Authorization: Bearer <token>`).
+- KV bound to `COACH`. Endpoints: `POST /backup`, `GET /restore` (requires `Authorization: Bearer <token>`).
 - PWA stores user data only in `localStorage`; Export/Import JSON available in UI.
 
 ## Architecture Overview

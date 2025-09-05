@@ -1,6 +1,6 @@
 export const config = { runtime: 'edge' };
 
-type Env = { LEDGER: KVNamespace };
+type Env = { COACH: KVNamespace };
 
 function json(data: unknown, init: ResponseInit = {}) {
   return new Response(JSON.stringify(data), { ...init, headers: { 'content-type': 'application/json', ...(init.headers || {}) } });
@@ -15,7 +15,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ params, env }) => {
   const month = String(params.month || '').trim();
   if (!user || !validMonth(month)) return bad('invalid params');
   const key = `${user}/${month}`;
-  const value = await env.LEDGER.get(key, 'json');
+  const value = await env.COACH.get(key, 'json');
   return json(value ?? null);
 };
 
@@ -25,12 +25,9 @@ export const onRequestPut: PagesFunction<Env> = async ({ request, params, env })
   if (!user || !validMonth(month)) return bad('invalid params');
   let body: unknown;
   try { body = await request.json(); } catch { return bad('invalid json'); }
-  // Minimal validation: object with logs array (bounded)
+  // Minimal validation: ensure JSON object and size is bounded
   if (typeof body !== 'object' || body === null) return bad('invalid shape');
-  const b = body as any;
-  if (!Array.isArray(b.logs) || b.logs.length > 1200) return bad('invalid logs');
   const key = `${user}/${month}`;
-  await env.LEDGER.put(key, JSON.stringify({ logs: b.logs }), { metadata: { updatedAt: new Date().toISOString() } });
+  await env.COACH.put(key, JSON.stringify(body), { metadata: { updatedAt: new Date().toISOString() } });
   return json({ ok: true });
 };
-

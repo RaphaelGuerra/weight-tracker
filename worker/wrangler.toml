@@ -3,6 +3,5 @@ main = "worker.ts"
 compatibility_date = "2024-09-01"
 
 [[kv_namespaces]]
-binding = "DATA"
+binding = "COACH"
 id = "kv_namespace_id_placeholder"
-
