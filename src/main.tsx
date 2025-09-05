@@ -12,6 +12,7 @@ import CheckpointsModal from './components/CheckpointsModal';
 import { AppState, DayLog, ProjectionPoint } from './types';
 import { defaultSettings } from './lib/defaults';
 import { loadState, saveState } from './lib/storage';
+import { getSyncId, loadRemoteMonth, monthFromISO, saveLocalMonthDebounced, saveRemoteMonthDebounced } from './lib/store';
 import { simulateProjection } from './lib/compute';
 
 const loadInitial = (): AppState => {
@@ -43,6 +44,15 @@ function App() {
   const persist = (s: AppState) => {
     setState(s);
     saveState(s);
+    // Month-scoped persistence (local + remote if syncId and base URL set via BackupCard)
+    const lastDate = s.logs.at(-1)?.dateISO ?? new Date().toISOString();
+    const month = monthFromISO(lastDate);
+    const prefix = month + '-';
+    const monthLogs = s.logs.filter((l) => l.dateISO.startsWith(prefix));
+    saveLocalMonthDebounced(month, { logs: monthLogs });
+    const syncId = getSyncId();
+    const base = (window as any).__PAGES_BASE__ as string | undefined; // optional runtime override
+    if (syncId && base) saveRemoteMonthDebounced(base, syncId, month, { logs: monthLogs });
   };
 
   const onSaveLog = (log: DayLog) => {
@@ -61,6 +71,23 @@ function App() {
   const onCheckpointsChange = (c: AppState['settings']['checkpoints']) => persist({ ...state, settings: { ...state.settings, checkpoints: c } });
 
   React.useEffect(() => { recalc(); /* initial */ }, []);
+  // On mount, attempt remote month load if configured via global (optional power-user path)
+  React.useEffect(() => {
+    const syncId = getSyncId();
+    const base = (window as any).__PAGES_BASE__ as string | undefined;
+    if (!syncId || !base) return;
+    const month = monthFromISO(state.logs.at(-1)?.dateISO ?? new Date().toISOString());
+    loadRemoteMonth(base, syncId, month).then((data) => {
+      if (data && data.logs?.length) {
+        const prefix = month + '-';
+        const others = state.logs.filter((l) => !l.dateISO.startsWith(prefix));
+        const next = { ...state, logs: [...others, ...data.logs].sort((a, b) => a.dateISO.localeCompare(b.dateISO)) };
+        setState(next);
+        saveState(next);
+      }
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <>
@@ -80,4 +107,3 @@ function App() {
 }
 
 createRoot(document.getElementById('root')!).render(<App />);
-

@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
-import { AppState } from '../types';
+import { AppState, DayLog } from '../types';
 import { exportJSON, importJSON, remoteBackup, remoteRestore } from '../lib/storage';
+import { getSyncId, loadRemoteMonth, monthFromISO, saveRemoteMonthDebounced, setSyncId } from '../lib/store';
 
 type Props = {
   state: AppState;
@@ -12,6 +13,8 @@ export default function BackupCard({ state, onState }: Props) {
   const [url, setUrl] = useState<string>(state.workerURL ?? '');
   const [token, setToken] = useState<string>(state.bearerToken ?? '');
   const [msg, setMsg] = useState<string>('');
+  const [pagesBase, setPagesBase] = useState<string>('');
+  const [syncId, setSyncIdLocal] = useState<string>(getSyncId() ?? '');
 
   const doExport = () => {
     const blob = new Blob([exportJSON({ ...state, workerURL: url || undefined, bearerToken: token || undefined })], { type: 'application/json' });
@@ -51,6 +54,45 @@ export default function BackupCard({ state, onState }: Props) {
         </label>
       </div>
       <details>
+        <summary>Sincronização (Cloudflare Pages Functions)</summary>
+        <div className="grid">
+          <label>Base URL do site (Pages)
+            <input type="url" placeholder="https://<projeto>.pages.dev" value={pagesBase} onChange={(e) => setPagesBase(e.target.value)} />
+          </label>
+          <label>Sync ID (alto entropia)
+            <input type="text" value={syncId} onChange={(e) => setSyncIdLocal(e.target.value)} />
+          </label>
+          <div>
+            <small>Armazenado em localStorage sob chave peso.v1.syncId</small>
+          </div>
+        </div>
+        <div className="grid">
+          <button onClick={() => { setSyncId(syncId || null); setMsg('Sync ID atualizado.'); }}>Salvar Sync ID</button>
+          <button onClick={async () => {
+            const id = syncId || getSyncId();
+            if (!id || !pagesBase) { setMsg('Preencha base URL e Sync ID.'); return; }
+            const month = monthFromISO(state.logs.at(-1)?.dateISO ?? new Date().toISOString());
+            const data = await loadRemoteMonth(pagesBase, id, month);
+            if (data) {
+              // merge: replace logs for that month
+              const prefix = month + '-';
+              const others = state.logs.filter(l => !l.dateISO.startsWith(prefix));
+              onState({ ...state, logs: [...others, ...data.logs].sort((a,b)=>a.dateISO.localeCompare(b.dateISO)) });
+              setMsg('Mês carregado do remoto.');
+            } else setMsg('Nada remoto para este mês.');
+          }}>Carregar mês remoto</button>
+          <button onClick={() => {
+            const id = syncId || getSyncId();
+            if (!id || !pagesBase) { setMsg('Preencha base URL e Sync ID.'); return; }
+            const month = monthFromISO(state.logs.at(-1)?.dateISO ?? new Date().toISOString());
+            const prefix = month + '-';
+            const monthLogs: DayLog[] = state.logs.filter(l => l.dateISO.startsWith(prefix));
+            saveRemoteMonthDebounced(pagesBase, id, month, { logs: monthLogs }, 0);
+            setMsg('Mês salvo no remoto.');
+          }}>Salvar mês remoto</button>
+        </div>
+      </details>
+      <details>
         <summary>Backup remoto (Cloudflare Worker)</summary>
         <div className="grid">
           <label>Worker URL
@@ -69,4 +111,3 @@ export default function BackupCard({ state, onState }: Props) {
     </article>
   );
 }
-
