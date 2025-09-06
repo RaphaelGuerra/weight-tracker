@@ -69,7 +69,13 @@ function App() {
   };
 
   const onParamsChange = (p: AppState['settings']['projection']) => persist({ ...state, settings: { ...state.settings, projection: p } });
+  const onFatGoalsChange = (g: AppState['settings']['fatGoals']) => persist({ ...state, settings: { ...state.settings, fatGoals: g } });
   const onCheckpointsChange = (c: AppState['settings']['checkpoints']) => persist({ ...state, settings: { ...state.settings, checkpoints: c } });
+
+  const latestBodyFatPct = React.useMemo(() => {
+    const withBf = state.logs.filter(l => typeof l.bodyFatPct === 'number').sort((a,b)=>a.dateISO.localeCompare(b.dateISO));
+    return withBf.length ? withBf[withBf.length-1]!.bodyFatPct! : null;
+  }, [state.logs]);
 
   React.useEffect(() => { recalc(); /* initial */ }, []);
   // On mount and when active month changes, try remote load if Sync ID is set; fallback to local
@@ -100,13 +106,13 @@ function App() {
       <section className="cards">
         <TodayCard onSave={onSaveLog} />
         <WeekCard logs={state.logs} settings={state.settings} />
-        <GoalsProjectionCard params={state.settings.projection} onChange={onParamsChange} onRecalc={recalc} />
+        <GoalsProjectionCard params={state.settings.projection} onChange={onParamsChange} onRecalc={recalc} fatGoals={state.settings.fatGoals} onFatGoalsChange={onFatGoalsChange} latestBodyFatPct={latestBodyFatPct} />
         <ChartsCard logs={state.logs} settings={state.settings} projection={projection} />
         <DataTableCard logs={state.logs} onEdit={onEditLog} />
         <BackupCard state={state} onState={persist} />
       </section>
       <footer className="footer">PWA: dados locais no navegador; exporte JSON para portabilidade.</footer>
-      <CheckpointsModal open={modalOpen} onClose={() => setModalOpen(false)} checkpoints={state.settings.checkpoints} onChange={onCheckpointsChange} />
+      <CheckpointsModal open={modalOpen} onClose={() => setModalOpen(false)} checkpoints={state.settings.checkpoints} fatCheckpoints={state.settings.fatCheckpoints} onChange={onCheckpointsChange} onFatChange={(c)=>persist({ ...state, settings: { ...state.settings, fatCheckpoints: c } })} />
     </>
   );
 }

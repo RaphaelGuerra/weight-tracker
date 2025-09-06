@@ -1,16 +1,37 @@
-import React, { useState } from 'react';
-import { ProjectionParams } from '../types';
+import React, { useMemo, useState } from 'react';
+import { FatGoals, ProjectionParams } from '../types';
 
 type Props = {
   params: ProjectionParams;
   onChange: (p: ProjectionParams) => void;
   onRecalc: () => void;
+  fatGoals: FatGoals;
+  onFatGoalsChange: (g: FatGoals) => void;
+  latestBodyFatPct?: number | null;
 };
 
-export default function GoalsProjectionCard({ params, onChange, onRecalc }: Props) {
+export default function GoalsProjectionCard({ params, onChange, onRecalc, fatGoals, onFatGoalsChange, latestBodyFatPct }: Props) {
   const [local, setLocal] = useState<ProjectionParams>(params);
   const apply = () => { onChange(local); onRecalc(); };
   const upd = <K extends keyof ProjectionParams>(key: K, value: ProjectionParams[K]) => setLocal((p) => ({ ...p, [key]: value }));
+  const [goalsPct, setGoalsPct] = useState<string>(fatGoals.valuesPct.join(','));
+
+  const parsedGoals = useMemo(() => goalsPct.split(',').map(s => parseFloat(s.trim())).filter(v => isFinite(v)), [goalsPct]);
+
+  const genFatGoals = () => {
+    const current = latestBodyFatPct ?? null;
+    if (current == null) return;
+    const start = Math.floor(current / 2) * 2; // nearest even at or below current
+    const arr: number[] = [];
+    for (let v = start - 2; v >= 10 && arr.length < 8; v -= 2) arr.push(v);
+    setGoalsPct(arr.join(','));
+    onFatGoalsChange({ valuesPct: arr, labels: arr.map(x => `meta ${x}%`) });
+  };
+
+  const saveFatGoals = () => {
+    const arr = parsedGoals;
+    onFatGoalsChange({ valuesPct: arr, labels: arr.map(x => `meta ${x}%`) });
+  };
 
   return (
     <article>
@@ -71,10 +92,20 @@ export default function GoalsProjectionCard({ params, onChange, onRecalc }: Prop
           </label>
         </div>
       </details>
-      <footer>
+      <hr />
+      <header><strong>Metas de Gordura (%) — Hard</strong></header>
+      <div className="grid">
+        <label>Valores (separados por vírgula)
+          <input type="text" value={goalsPct} onChange={(e) => setGoalsPct(e.target.value)} />
+        </label>
+      </div>
+      <div className="grid">
+        <button type="button" onClick={saveFatGoals}>Salvar metas %</button>
+        <button type="button" onClick={genFatGoals} disabled={latestBodyFatPct == null}>Gerar metas (−2% a partir do atual)</button>
+      </div>
+      <footer style={{ marginTop: '0.5rem' }}>
         <button onClick={apply}>Recalcular</button>
       </footer>
     </article>
   );
 }
-

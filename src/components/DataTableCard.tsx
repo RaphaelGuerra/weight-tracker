@@ -16,7 +16,7 @@ export default function DataTableCard({ logs, onEdit }: Props) {
         <table>
           <thead>
             <tr>
-              <th>Data</th><th>Manhã</th><th>Noite</th><th>Dif</th><th>Média7d</th><th>Ações</th>
+              <th>Data</th><th>Manhã</th><th>Noite</th><th>Dif</th><th>Média7d</th><th>Gordura %</th><th>Ações</th>
             </tr>
           </thead>
           <tbody>
@@ -31,6 +31,7 @@ export default function DataTableCard({ logs, onEdit }: Props) {
                   <td>{l?.nightKg ?? ''}</td>
                   <td>{diff}</td>
                   <td>{m != null ? m.toFixed(2) : ''}</td>
+                  <td>{l?.bodyFatPct != null ? l.bodyFatPct.toFixed(2) : ''}</td>
                   <td><button onClick={() => onEdit({ dateISO: d, morningKg: l?.morningKg, nightKg: l?.nightKg })}>Editar</button></td>
                 </tr>
               );
@@ -41,4 +42,3 @@ export default function DataTableCard({ logs, onEdit }: Props) {
     </article>
   );
 }
-

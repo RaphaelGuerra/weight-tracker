@@ -14,7 +14,7 @@ export function buildDailyChartConfig(logs: DayLog[], rolling: { dateISO: string
   const dataMean = labels.map(d => (avgMap.get(d) ?? null));
   const datasets: ChartConfiguration['data']['datasets'] = [
     { label: 'Peso diário', data: dataDaily, borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.2)', spanGaps: true },
-    { label: 'Média 7d', data: dataMean, borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,0.2)', spanGaps: true },
+    { label: 'Peso média 7d', data: dataMean, borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,0.2)', spanGaps: true },
     ...settings.goals.valuesKg.map((g, i) => ({
       label: settings.goals.labels?.[i] ?? `Meta ${g}`,
       data: labels.map(() => g),
@@ -45,4 +45,26 @@ export function buildProjectionChartConfig(proj: ProjectionPoint[], settings: Se
 export function ensureChart(ctx: CanvasRenderingContext2D, cfg: ChartConfiguration, prev?: Chart | null): Chart {
   if (prev) prev.destroy();
   return new Chart(ctx, cfg);
+}
+
+export function buildFatDailyChartConfig(logs: DayLog[], rolling: { dateISO: string; meanPct: number | null }[], settings: Settings): ChartConfiguration {
+  const byDate = new Map<string, number>();
+  for (const l of logs) if (typeof l.bodyFatPct === 'number') byDate.set(l.dateISO, l.bodyFatPct);
+  const dates = [...byDate.keys()].sort();
+  const labels = dates;
+  const meanMap = new Map(rolling.filter(r => r.meanPct != null).map(r => [r.dateISO, r.meanPct as number]));
+  const dataDaily = labels.map(d => (byDate.get(d) ?? null));
+  const dataMean = labels.map(d => (meanMap.get(d) ?? null));
+  const datasets: ChartConfiguration['data']['datasets'] = [
+    { label: 'Gordura % diária', data: dataDaily, borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.2)', spanGaps: true },
+    { label: 'Gordura % média 7d', data: dataMean, borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,0.2)', spanGaps: true },
+    ...settings.fatGoals.valuesPct.map((g, i) => ({
+      label: settings.fatGoals.labels?.[i] ?? `Meta ${g}%`,
+      data: labels.map(() => g),
+      borderColor: '#f59e0b',
+      borderDash: [6, 6],
+      pointRadius: 0,
+    })),
+  ];
+  return { type: 'line', data: { labels, datasets }, options: { responsive: true, plugins: { legend: { position: 'top' } }, scales: { y: { suggestedMin: 10, suggestedMax: 35 } } } };
 }

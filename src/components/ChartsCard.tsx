@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Chart } from 'chart.js/auto';
 import { DayLog, ProjectionPoint, Settings } from '../types';
-import { buildDailyChartConfig, buildProjectionChartConfig, ensureChart } from '../lib/charts';
-import { rollingMean7d } from '../lib/compute';
+import { buildDailyChartConfig, buildFatDailyChartConfig, buildProjectionChartConfig, ensureChart } from '../lib/charts';
+import { rollingMean7d, rollingMean7dFatPct } from '../lib/compute';
 
 type Props = {
   logs: DayLog[];
@@ -12,8 +12,10 @@ type Props = {
 
 export default function ChartsCard({ logs, settings, projection }: Props) {
   const dailyRef = useRef<HTMLCanvasElement | null>(null);
+  const fatRef = useRef<HTMLCanvasElement | null>(null);
   const projRef = useRef<HTMLCanvasElement | null>(null);
   const [dailyChart, setDailyChart] = useState<Chart | null>(null);
+  const [fatChart, setFatChart] = useState<Chart | null>(null);
   const [projChart, setProjChart] = useState<Chart | null>(null);
 
   useEffect(() => {
@@ -23,6 +25,14 @@ export default function ChartsCard({ logs, settings, projection }: Props) {
     setDailyChart(chart);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(logs), JSON.stringify(settings.goals)]);
+
+  useEffect(() => {
+    if (!fatRef.current) return;
+    const cfg = buildFatDailyChartConfig(logs, rollingMean7dFatPct(logs), settings);
+    const chart = ensureChart(fatRef.current.getContext('2d')!, cfg, fatChart);
+    setFatChart(chart);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(logs), JSON.stringify(settings.fatGoals)]);
 
   useEffect(() => {
     if (!projRef.current) return;
@@ -36,7 +46,11 @@ export default function ChartsCard({ logs, settings, projection }: Props) {
     <article>
       <header><strong>Gráficos</strong></header>
       <div>
-        <h5>Peso diário + média 7d + metas</h5>
+        <h5>Gordura % diária + média 7d + metas (hard)</h5>
+        <canvas ref={fatRef} height={140} />
+      </div>
+      <div style={{ marginTop: '1rem' }}>
+        <h5>Peso diário + média 7d + metas (soft)</h5>
         <canvas ref={dailyRef} height={140} />
       </div>
       <div style={{ marginTop: '1rem' }}>
@@ -46,4 +60,3 @@ export default function ChartsCard({ logs, settings, projection }: Props) {
     </article>
   );
 }
-

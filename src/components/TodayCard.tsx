@@ -10,6 +10,7 @@ export default function TodayCard({ onSave }: Props) {
   const [dateISO, setDateISO] = useState<string>(todayISO());
   const [morningKg, setMorningKg] = useState<string>('');
   const [nightKg, setNightKg] = useState<string>('');
+  const [bodyFatPct, setBodyFatPct] = useState<string>('');
   const diff = useMemo(() => {
     const m = parseFloat(morningKg);
     const n = parseFloat(nightKg);
@@ -24,7 +25,9 @@ export default function TodayCard({ onSave }: Props) {
     const log: DayLog = { dateISO };
     if (isFinite(m)) log.morningKg = m;
     if (isFinite(n)) log.nightKg = n;
-    if (!log.morningKg && !log.nightKg) return;
+    const bf = parseFloat(bodyFatPct);
+    if (isFinite(bf)) log.bodyFatPct = bf;
+    if (!log.morningKg && !log.nightKg && !log.bodyFatPct) return;
     onSave(log);
   };
 
@@ -45,10 +48,12 @@ export default function TodayCard({ onSave }: Props) {
           <label>Dif. noite–manhã (kg)
             <input type="text" disabled value={diff} />
           </label>
+          <label>Gordura corporal (%)
+            <input type="number" step="0.1" inputMode="decimal" value={bodyFatPct} onChange={(e) => setBodyFatPct(e.target.value)} placeholder="ex: 20.5" />
+          </label>
         </div>
         <button type="submit">Salvar</button>
       </form>
     </article>
   );
 }
-

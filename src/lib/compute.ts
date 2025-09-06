@@ -37,6 +37,15 @@ export function findActiveCheckpoint(settings: Settings, dateISO: string): Weekl
   return found || null;
 }
 
+export function findActiveFatCheckpoint(settings: Settings, dateISO: string): { endDateISO: string; lowPct: number; highPct: number } | null {
+  const end = weekEnd(dateISO);
+  const endISO = fmtISO(end);
+  const found = [...settings.fatCheckpoints]
+    .sort((a, b) => a.endDateISO.localeCompare(b.endDateISO))
+    .find((c) => c.endDateISO >= endISO);
+  return found || null;
+}
+
 export function weeklyVariationKg(logs: DayLog[]): number | null {
   if (logs.length < 8) return null;
   const byDate = new Map<string, number>();
@@ -50,6 +59,36 @@ export function weeklyVariationKg(logs: DayLog[]): number | null {
   const prevIdx = dates.findIndex((d) => differenceInCalendarDays(parseISO(last), parseISO(d)) === 7);
   if (prevIdx === -1) return null;
   return byDate.get(last)! - byDate.get(dates[prevIdx]!)!;
+}
+
+export function weeklyVariationFatPct(logs: DayLog[]): number | null {
+  const byDate = new Map<string, number>();
+  for (const l of logs) if (typeof l.bodyFatPct === 'number') byDate.set(l.dateISO, l.bodyFatPct);
+  const dates = [...byDate.keys()].sort();
+  if (dates.length < 8) return null;
+  const last = dates[dates.length - 1]!;
+  const prevIdx = dates.findIndex((d) => differenceInCalendarDays(parseISO(last), parseISO(d)) === 7);
+  if (prevIdx === -1) return null;
+  return byDate.get(last)! - byDate.get(dates[prevIdx]!)!;
+}
+
+export function rollingMean7dFatPct(logs: DayLog[]): { dateISO: string; meanPct: number | null }[] {
+  const byDate = new Map<string, number>();
+  for (const l of logs) {
+    if (typeof l.bodyFatPct === 'number') byDate.set(l.dateISO, l.bodyFatPct);
+  }
+  const dates = [...byDate.keys()].sort();
+  return dates.map((d, i) => {
+    const slice = dates.slice(Math.max(0, i - 6), i + 1);
+    const vals = slice.map((s) => byDate.get(s)!).filter((v) => typeof v === 'number');
+    return { dateISO: d, meanPct: vals.length === 7 ? vals.reduce((a, b) => a + b, 0) / 7 : null };
+  });
+}
+
+export function statusVsRange(value: number, low: number, high: number): 'ok' | 'warn' | 'high' {
+  if (value <= high && value >= low) return 'ok';
+  if (value > high) return 'high';
+  return 'warn';
 }
 
 // Nonlinear projection per spec

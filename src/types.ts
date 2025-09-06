@@ -2,6 +2,7 @@ export type DayLog = {
   dateISO: string; // "2025-09-05"
   morningKg?: number;
   nightKg?: number;
+  bodyFatPct?: number; // gordura corporal % (hard indicator)
 };
 
 export type WeeklyCheckpoint = {
@@ -11,6 +12,7 @@ export type WeeklyCheckpoint = {
 };
 
 export type Goals = { valuesKg: number[]; labels?: string[] };
+export type FatGoals = { valuesPct: number[]; labels?: string[] };
 
 export type ProjectionParams = {
   bmr: number; // default 1724
@@ -32,7 +34,9 @@ export type ProjectionParams = {
 
 export type Settings = {
   goals: Goals;
+  fatGoals: FatGoals;
   checkpoints: WeeklyCheckpoint[];
+  fatCheckpoints: { endDateISO: string; lowPct: number; highPct: number }[];
   projection: ProjectionParams;
 };
 
@@ -44,4 +48,3 @@ export type AppState = {
   bearerToken?: string;
   workerURL?: string;
 };
-
