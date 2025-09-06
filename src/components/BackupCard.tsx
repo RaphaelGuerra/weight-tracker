@@ -15,6 +15,7 @@ export default function BackupCard({ state, onState }: Props) {
   const [msg, setMsg] = useState<string>('');
   const [pagesBase, setPagesBase] = useState<string>(getBaseUrl() ?? '');
   const [syncId, setSyncIdLocal] = useState<string>(getSyncId() ?? '');
+  const pagesConfigured = Boolean(pagesBase && syncId);
 
   const doExport = () => {
     const blob = new Blob([exportJSON({ ...state, workerURL: url || undefined, bearerToken: token || undefined })], { type: 'application/json' });
@@ -53,8 +54,13 @@ export default function BackupCard({ state, onState }: Props) {
           <input type="file" accept="application/json" ref={fileRef} onChange={() => doImport()} />
         </label>
       </div>
-      <details>
+      <details open={!pagesConfigured}>
         <summary>Sincronização (Cloudflare Pages Functions)</summary>
+        <p>
+          Conecte seu app ao projeto no Cloudflare Pages. Informe a Base URL
+          (ex.: https://seu-projeto.pages.dev) e um Sync ID forte. Depois use os
+          botões para carregar/salvar o mês atual.
+        </p>
         <div className="grid">
           <label>Base URL do site (Pages)
             <input type="url" placeholder="https://<projeto>.pages.dev" value={pagesBase} onChange={(e) => setPagesBase(e.target.value)} />

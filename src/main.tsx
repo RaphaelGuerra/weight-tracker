@@ -12,7 +12,7 @@ import CheckpointsModal from './components/CheckpointsModal';
 import { AppState, DayLog, ProjectionFatPoint, ProjectionPoint } from './types';
 import { defaultSettings } from './lib/defaults';
 import { loadState, saveState } from './lib/storage';
-import { getBaseUrl, getSyncId, loadRemoteMonth, monthFromISO, saveLocalMonthDebounced, saveRemoteMonthDebounced } from './lib/store';
+import { getBaseUrl, getSyncId, loadRemoteMonth, monthFromISO, saveLocalMonthDebounced, saveRemoteMonthDebounced, setBaseUrl, setSyncId } from './lib/store';
 import { simulateProjection, simulateFatProjection } from './lib/compute';
 
 const loadInitial = (): AppState => {
@@ -30,6 +30,14 @@ function App() {
   const [fatProjection, setFatProjection] = useState<ProjectionFatPoint[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [syncStatus, setSyncStatus] = useState<'idle'|'loading'|'ok'|'error'>('idle');
+  const [activeSyncId, setActiveSyncId] = useState<string | null>(() => getSyncId());
+  const [baseUrl, setBaseUrlState] = useState<string | null>(() => getBaseUrl());
+  const [toast, setToast] = useState<string>('');
+
+  const showToast = (t: string, ms = 1800) => {
+    setToast(t);
+    window.setTimeout(() => setToast(''), ms);
+  };
 
   const recalc = () => {
     const initialWeight = (() => {
@@ -61,8 +69,8 @@ function App() {
     const prefix = month + '-';
     const monthLogs = s.logs.filter((l) => l.dateISO.startsWith(prefix));
     saveLocalMonthDebounced(month, { logs: monthLogs });
-    const syncId = getSyncId();
-    const base = getBaseUrl() ?? undefined;
+    const syncId = activeSyncId ?? undefined;
+    const base = baseUrl ?? undefined;
     if (syncId && base) saveRemoteMonthDebounced(base, syncId, month, { logs: monthLogs });
   };
 
@@ -88,14 +96,21 @@ function App() {
   }, [state.logs]);
 
   React.useEffect(() => { recalc(); /* initial */ }, []);
-  // On mount and when active month changes, try remote load if Sync ID is set; fallback to local
+  // Keep reactive copies of localStorage-based settings (if changed elsewhere)
   React.useEffect(() => {
-    const syncId = getSyncId();
-    const base = getBaseUrl();
-    if (!syncId || !base) { setSyncStatus('idle'); return; }
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === 'coach.v1.syncId') setActiveSyncId(getSyncId());
+      if (e.key === 'coach.v1.baseUrl') setBaseUrlState(getBaseUrl());
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+  // On mount and when active month, Sync ID or Base URL changes, try remote load; fallback to local
+  React.useEffect(() => {
+    if (!activeSyncId || !baseUrl) { setSyncStatus('idle'); return; }
     const month = monthFromISO((state.logs.at(-1)?.dateISO ?? new Date().toISOString()));
     setSyncStatus('loading');
-    loadRemoteMonth(base, syncId, month).then((data) => {
+    loadRemoteMonth(baseUrl, activeSyncId, month).then((data) => {
       if (data && Array.isArray(data.logs)) {
         const prefix = month + '-';
         const others = state.logs.filter((l) => !l.dateISO.startsWith(prefix));
@@ -103,16 +118,42 @@ function App() {
         setState(next);
         saveState(next);
         setSyncStatus('ok');
+        showToast('Sync carregado');
       } else {
         setSyncStatus('error'); // fallback to local content (already in state)
+        showToast('Falha de sync');
       }
-    }).catch(() => setSyncStatus('error'));
+    }).catch(() => { setSyncStatus('error'); showToast('Falha de sync'); });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [monthFromISO((state.logs.at(-1)?.dateISO ?? new Date().toISOString()))]);
+  }, [activeSyncId, baseUrl, monthFromISO((state.logs.at(-1)?.dateISO ?? new Date().toISOString()))]);
+
+  const handleConnect = (id: string) => {
+    setSyncId(id);
+    setActiveSyncId(id);
+    if (!getBaseUrl()) {
+      setBaseUrl(window.location.origin);
+      setBaseUrlState(window.location.origin);
+    }
+    setSyncStatus('loading');
+    showToast('Sync conectado');
+  };
+
+  const handleDisconnect = () => {
+    setSyncId(null);
+    setActiveSyncId(null);
+    setSyncStatus('idle');
+    showToast('Sync desconectado');
+  };
 
   return (
     <>
-      <TopBar onOpenCheckpoints={() => setModalOpen(true)} />
+      <TopBar
+        onOpenCheckpoints={() => setModalOpen(true)}
+        syncId={activeSyncId}
+        status={activeSyncId ? syncStatus : 'off'}
+        onConnect={handleConnect}
+        onDisconnect={handleDisconnect}
+      />
       <section className="cards">
         <TodayCard onSave={onSaveLog} />
         <WeekCard logs={state.logs} settings={state.settings} />
@@ -122,6 +163,9 @@ function App() {
         <BackupCard state={state} onState={persist} />
       </section>
       <footer className="footer">PWA: dados locais no navegador; exporte JSON para portabilidade.</footer>
+      {toast && (
+        <div style={{ position: 'fixed', bottom: 16, left: '50%', transform: 'translateX(-50%)', background: '#111827', color: 'white', padding: '6px 10px', borderRadius: 6, fontSize: 12, boxShadow: '0 2px 6px rgba(0,0,0,0.25)' }}>{toast}</div>
+      )}
       <CheckpointsModal open={modalOpen} onClose={() => setModalOpen(false)} checkpoints={state.settings.checkpoints} fatCheckpoints={state.settings.fatCheckpoints} onChange={onCheckpointsChange} onFatChange={(c)=>persist({ ...state, settings: { ...state.settings, fatCheckpoints: c } })} />
     </>
   );

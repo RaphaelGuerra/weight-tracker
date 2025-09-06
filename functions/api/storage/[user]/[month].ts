@@ -3,12 +3,20 @@ export const config = { runtime: 'edge' };
 type Env = { COACH: KVNamespace };
 
 function json(data: unknown, init: ResponseInit = {}) {
-  return new Response(JSON.stringify(data), { ...init, headers: { 'content-type': 'application/json', ...(init.headers || {}) } });
+  return new Response(JSON.stringify(data), { ...init, headers: { 'content-type': 'application/json', ...(init.headers || {}), ...corsHeaders() } });
 }
 
 function bad(msg: string, status = 400) { return json({ error: msg }, { status }); }
 
 function validMonth(m: string) { return /^\d{4}-\d{2}$/.test(m); }
+
+function corsHeaders() {
+  return {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET,PUT,OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+  } as const;
+}
 
 export const onRequestGet: PagesFunction<Env> = async ({ params, env }) => {
   const user = String(params.user || '').trim();
@@ -30,4 +38,8 @@ export const onRequestPut: PagesFunction<Env> = async ({ request, params, env })
   const key = `${user}/${month}`;
   await env.COACH.put(key, JSON.stringify(body), { metadata: { updatedAt: new Date().toISOString() } });
   return json({ ok: true });
+};
+
+export const onRequestOptions: PagesFunction<Env> = async () => {
+  return new Response(null, { headers: corsHeaders() });
 };

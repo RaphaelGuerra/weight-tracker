@@ -57,7 +57,7 @@ export async function loadRemoteMonth(baseUrl: string, syncId: string, month: st
   }
 }
 
-export function saveRemoteMonthDebounced(baseUrl: string, syncId: string, month: string, payload: MonthPayload, ms = 800) {
+export function saveRemoteMonthDebounced(baseUrl: string, syncId: string, month: string, payload: MonthPayload, ms = 500) {
   debounce('remote:' + month, async () => {
     try {
       const url = `${baseUrl.replace(/\/$/, '')}/api/storage/${encodeURIComponent(syncId)}/${encodeURIComponent(month)}`;
