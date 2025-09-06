@@ -1,5 +1,5 @@
 import { Chart, ChartConfiguration } from 'chart.js/auto';
-import { DayLog, ProjectionPoint, Settings } from '../types';
+import { DayLog, ProjectionFatPoint, ProjectionPoint, Settings } from '../types';
 
 export function buildDailyChartConfig(logs: DayLog[], rolling: { dateISO: string; meanKg: number | null }[], settings: Settings): ChartConfiguration {
   const dates = [...new Set(logs.map(l => l.dateISO))].sort();
@@ -58,6 +58,21 @@ export function buildFatDailyChartConfig(logs: DayLog[], rolling: { dateISO: str
   const datasets: ChartConfiguration['data']['datasets'] = [
     { label: 'Gordura % diária', data: dataDaily, borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.2)', spanGaps: true },
     { label: 'Gordura % média 7d', data: dataMean, borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,0.2)', spanGaps: true },
+    ...settings.fatGoals.valuesPct.map((g, i) => ({
+      label: settings.fatGoals.labels?.[i] ?? `Meta ${g}%`,
+      data: labels.map(() => g),
+      borderColor: '#f59e0b',
+      borderDash: [6, 6],
+      pointRadius: 0,
+    })),
+  ];
+  return { type: 'line', data: { labels, datasets }, options: { responsive: true, plugins: { legend: { position: 'top' } }, scales: { y: { suggestedMin: 10, suggestedMax: 35 } } } };
+}
+export function buildFatProjectionChartConfig(proj: ProjectionFatPoint[], settings: Settings): ChartConfiguration {
+  const labels = proj.map(p => p.dateISO);
+  const data = proj.map(p => p.fatPct);
+  const datasets: ChartConfiguration['data']['datasets'] = [
+    { label: 'Projeção Gordura %', data, borderColor: '#dc2626', backgroundColor: 'rgba(220,38,38,0.2)' },
     ...settings.fatGoals.valuesPct.map((g, i) => ({
       label: settings.fatGoals.labels?.[i] ?? `Meta ${g}%`,
       data: labels.map(() => g),

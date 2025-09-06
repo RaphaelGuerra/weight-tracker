@@ -9,11 +9,11 @@ import ChartsCard from './components/ChartsCard';
 import DataTableCard from './components/DataTableCard';
 import BackupCard from './components/BackupCard';
 import CheckpointsModal from './components/CheckpointsModal';
-import { AppState, DayLog, ProjectionPoint } from './types';
+import { AppState, DayLog, ProjectionFatPoint, ProjectionPoint } from './types';
 import { defaultSettings } from './lib/defaults';
 import { loadState, saveState } from './lib/storage';
 import { getBaseUrl, getSyncId, loadRemoteMonth, monthFromISO, saveLocalMonthDebounced, saveRemoteMonthDebounced } from './lib/store';
-import { simulateProjection } from './lib/compute';
+import { simulateProjection, simulateFatProjection } from './lib/compute';
 
 const loadInitial = (): AppState => {
   return (
@@ -27,6 +27,7 @@ const loadInitial = (): AppState => {
 function App() {
   const [state, setState] = useState<AppState>(() => loadInitial());
   const [projection, setProjection] = useState<ProjectionPoint[]>([]);
+  const [fatProjection, setFatProjection] = useState<ProjectionFatPoint[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [syncStatus, setSyncStatus] = useState<'idle'|'loading'|'ok'|'error'>('idle');
 
@@ -40,6 +41,15 @@ function App() {
     const initialDateISO = state.logs.at(-1)?.dateISO ?? new Date().toISOString().slice(0, 10);
     const proj = simulateProjection(state, initialWeight, initialDateISO);
     setProjection(proj);
+    const lastBf = (() => {
+      const withBf = state.logs.filter(l => typeof l.bodyFatPct === 'number').sort((a,b)=>a.dateISO.localeCompare(b.dateISO));
+      return withBf.length ? withBf[withBf.length-1]!.bodyFatPct! : null;
+    })();
+    if (lastBf != null) {
+      setFatProjection(simulateFatProjection(state, initialWeight, lastBf, initialDateISO));
+    } else {
+      setFatProjection([]);
+    }
   };
 
   const persist = (s: AppState) => {
@@ -107,7 +117,7 @@ function App() {
         <TodayCard onSave={onSaveLog} />
         <WeekCard logs={state.logs} settings={state.settings} />
         <GoalsProjectionCard params={state.settings.projection} onChange={onParamsChange} onRecalc={recalc} fatGoals={state.settings.fatGoals} onFatGoalsChange={onFatGoalsChange} latestBodyFatPct={latestBodyFatPct} />
-        <ChartsCard logs={state.logs} settings={state.settings} projection={projection} />
+        <ChartsCard logs={state.logs} settings={state.settings} projection={projection} fatProjection={fatProjection} />
         <DataTableCard logs={state.logs} onEdit={onEditLog} />
         <BackupCard state={state} onState={persist} />
       </section>

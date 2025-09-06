@@ -1,5 +1,5 @@
 import { addDays, differenceInCalendarDays, isBefore, isSameDay, parseISO } from 'date-fns';
-import { AppState, DayLog, ProjectionPoint, Settings, WeeklyCheckpoint } from '../types';
+import { AppState, DayLog, ProjectionFatPoint, ProjectionPoint, Settings, WeeklyCheckpoint } from '../types';
 import { fmtISO, weekEnd, weekStart } from './dates';
 
 export function rollingMean7d(logs: DayLog[]): { dateISO: string; meanKg: number | null }[] {
@@ -145,4 +145,70 @@ function isTrainingDay(p: AppState['settings']['projection'], date: Date) {
   const dow = date.getDay(); // 0..6 Sun..Sat
   const as1to7 = dow === 0 ? 7 : dow; // 1..7
   return p.phase2.trainingDays.includes(as1to7);
+}
+
+function clamp(n: number, min: number, max: number) { return Math.max(min, Math.min(max, n)); }
+
+// Adiposity-aware FM/FFM projection producing fat% series
+export function simulateFatProjection(
+  state: AppState,
+  initialWeightKg: number,
+  initialFatPct: number,
+  initialDateISO: string
+): ProjectionFatPoint[] {
+  const p = state.settings.projection;
+  const calib = p.bmr / (500 + 22 * p.ffmKg);
+  const kcalPerKg = p.kcalPerKg;
+
+  let fm = (initialWeightKg * initialFatPct) / 100;
+  let ffm = initialWeightKg - fm;
+  let weight = initialWeightKg;
+  const startFFM = ffm;
+
+  let cursor = weekStart(initialDateISO);
+  const out: ProjectionFatPoint[] = [];
+
+  const maxWeeks = 26;
+  for (let w = 0; w < maxWeeks; w++) {
+    let weeklyDeficit = 0;
+    for (let d = 0; d < 7; d++) {
+      const date = addDays(cursor, d);
+      const bmr = (500 + 22 * ffm) * calib;
+      const kgLost = Math.max(0, initialWeightKg - weight);
+      const tdee = bmr * p.pal - p.tdeeDropPerKg * kgLost;
+
+      const inPhase1 = !isBefore(date, parseISO(p.phase1.startISO)) && !isBefore(parseISO(p.phase1.endISO), date);
+      const inPhase2 = isBefore(parseISO(p.phase2.startISO), addDays(date, 1));
+      let intake = inPhase1 && !inPhase2 ? p.phase1.intakeKcal : (isTrainingDay(p, date) ? p.phase2.intakeTraining : p.phase2.intakeRest);
+      const dow = date.getDay();
+      if (p.weekendSurplusKcal && (dow === 0 || dow === 6)) intake += p.weekendSurplusKcal;
+      weeklyDeficit += (tdee - intake);
+    }
+
+    const deltaKg = weeklyDeficit / kcalPerKg; // + loss, - gain
+    const fatPctNow = (fm / (fm + ffm)) * 100;
+    // Make FFM fraction dynamic: higher fat% -> lower FFM loss fraction
+    const ffmFracLoss = clamp(p.ffmFraction - 0.01 * (fatPctNow - 20), 0.1, 0.5);
+
+    if (deltaKg >= 0) {
+      const ffmLoss = deltaKg * ffmFracLoss;
+      const fmLoss = deltaKg - ffmLoss;
+      ffm = Math.max(55, ffm - ffmLoss);
+      fm = Math.max(0, fm - fmLoss);
+    } else {
+      // Weight gain: assume 80% fat, 20% FFM by default
+      const gain = -deltaKg;
+      fm += gain * 0.8;
+      ffm += gain * 0.2;
+    }
+    weight = fm + ffm;
+
+    const weekEndDate = addDays(cursor, 6);
+    out.push({ dateISO: fmtISO(weekEndDate), fatPct: Number(((fm / (fm + ffm)) * 100).toFixed(2)), kg: Number(weight.toFixed(2)) });
+
+    cursor = addDays(cursor, 7);
+    const endISO = p.phase2.endISO;
+    if (endISO && isBefore(parseISO(endISO), cursor)) break;
+  }
+  return out;
 }

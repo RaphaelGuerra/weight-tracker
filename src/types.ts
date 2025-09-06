@@ -41,6 +41,7 @@ export type Settings = {
 };
 
 export type ProjectionPoint = { dateISO: string; kg: number };
+export type ProjectionFatPoint = { dateISO: string; fatPct: number; kg?: number };
 
 export type AppState = {
   logs: DayLog[];
