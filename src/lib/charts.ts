@@ -16,10 +16,40 @@ export function buildDailyChartConfig(logs: DayLog[], _rolling: { dateISO: strin
   const dataMM3 = labels.map(d => mm3Map.get(d) ?? null);
   const dataMM7 = labels.map(d => mm7Map.get(d) ?? null);
 
+  // Detect crossings where MM7 crosses a goal value (up or down)
+  const crossingDatasets: ChartConfiguration['data']['datasets'] = [];
+  for (let gi = 0; gi < settings.goals.valuesKg.length; gi++) {
+    const goal = settings.goals.valuesKg[gi]!;
+    const points = labels.map((_, i) => null as number | null);
+    let prev: number | undefined;
+    for (let i = 0; i < labels.length; i++) {
+      const v = dataMM7[i] as number | null;
+      if (v == null) { prev = prev; continue; }
+      if (prev != null) {
+        const a = prev - goal;
+        const b = v - goal;
+        if (a === 0 || b === 0 || (a < 0 && b > 0) || (a > 0 && b < 0)) {
+          points[i] = goal; // marker sits on goal line
+        }
+      }
+      prev = v;
+    }
+    crossingDatasets.push({
+      label: `Cruzou meta ${settings.goals.labels?.[gi] ?? goal}`,
+      data: points,
+      borderColor: '#f59e0b',
+      backgroundColor: '#f59e0b',
+      pointRadius: 5,
+      pointStyle: 'triangle',
+      showLine: false,
+    } as any);
+  }
+
   const datasets: ChartConfiguration['data']['datasets'] = [
     { label: 'Peso noturno (pontos)', data: dataNight, borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.2)', spanGaps: true, pointRadius: 3, showLine: false },
     { label: 'MM3', data: dataMM3, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.2)', spanGaps: true, pointRadius: 0, borderWidth: 2 },
     { label: 'MM7', data: dataMM7, borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.2)', spanGaps: true, pointRadius: 0, borderWidth: 3 },
+    ...crossingDatasets,
     ...settings.goals.valuesKg.map((g, i) => ({
       label: settings.goals.labels?.[i] ?? `Meta ${g}`,
       data: labels.map(() => g),
