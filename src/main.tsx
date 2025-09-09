@@ -159,7 +159,7 @@ function App() {
         <WeekCard logs={state.logs} settings={state.settings} />
         <GoalsProjectionCard params={state.settings.projection} onChange={onParamsChange} onRecalc={recalc} fatGoals={state.settings.fatGoals} onFatGoalsChange={onFatGoalsChange} latestBodyFatPct={latestBodyFatPct} />
         <ChartsCard logs={state.logs} settings={state.settings} projection={projection} fatProjection={fatProjection} />
-        <DataTableCard logs={state.logs} onEdit={onEditLog} />
+        <DataTableCard logs={state.logs} settings={state.settings} onEdit={onEditLog} />
         <BackupCard state={state} onState={persist} />
       </section>
       <footer className="footer">PWA: dados locais no navegador; exporte JSON para portabilidade.</footer>
