@@ -33,7 +33,8 @@ export default function TodayCard({ onSave }: Props) {
 
   return (
     <article>
-      <header><strong>Hoje</strong></header>
+      <header><strong>Hoje (Registrar)</strong></header>
+      <small>Lembrete: pesagem oficial é à noite, pré‑OMAD.</small>
       <form onSubmit={submit}>
         <div className="grid">
           <label>Data
@@ -42,7 +43,7 @@ export default function TodayCard({ onSave }: Props) {
           <label>Peso manhã (kg)
             <input type="number" step="0.1" inputMode="decimal" value={morningKg} onChange={(e) => setMorningKg(e.target.value)} placeholder="ex: 81.2" />
           </label>
-          <label>Peso noite (kg)
+          <label>Peso noite (kg) — oficial
             <input type="number" step="0.1" inputMode="decimal" value={nightKg} onChange={(e) => setNightKg(e.target.value)} placeholder="ex: 82.0" />
           </label>
           <label>Dif. noite–manhã (kg)
@@ -52,7 +53,7 @@ export default function TodayCard({ onSave }: Props) {
             <input type="number" step="0.1" inputMode="decimal" value={bodyFatPct} onChange={(e) => setBodyFatPct(e.target.value)} placeholder="ex: 20.5" />
           </label>
         </div>
-        <button type="submit">Salvar</button>
+        <button type="submit" className="primary">Salvar</button>
       </form>
     </article>
   );

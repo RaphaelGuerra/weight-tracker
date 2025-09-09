@@ -9,6 +9,7 @@ export type WeeklyCheckpoint = {
   endDateISO: string; // e.g. "2025-09-12"
   lowKg: number;
   highKg: number;
+  label?: string;
 };
 
 export type Goals = { valuesKg: number[]; labels?: string[] };
@@ -38,6 +39,8 @@ export type Settings = {
   checkpoints: WeeklyCheckpoint[];
   fatCheckpoints: { endDateISO: string; lowPct: number; highPct: number }[];
   projection: ProjectionParams;
+  trendWindowShort?: number; // default 3 (MM3)
+  trendWindowLong?: number;  // default 7 (MM7)
 };
 
 export type ProjectionPoint = { dateISO: string; kg: number };

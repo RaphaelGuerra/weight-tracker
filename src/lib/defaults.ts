@@ -39,4 +39,6 @@ export const defaultSettings: Settings = {
     },
     weekendSurplusKcal: 0,
   },
+  trendWindowShort: 3,
+  trendWindowLong: 7,
 };

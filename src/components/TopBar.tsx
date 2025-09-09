@@ -27,23 +27,28 @@ export default function TopBar({ onOpenCheckpoints, syncId, status, onConnect, o
   }, [status]);
 
   return (
-    <header className="topbar" style={{ display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'space-between' }}>
-      <h1 style={{ margin: 0, fontSize: '1.25rem' }}>Peso Coach{syncId ? ` – Sync: ${syncId}` : ''}</h1>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span title={`status: ${status}`} style={{ width: 10, height: 10, borderRadius: 9999, background: dotColor, display: 'inline-block' }} />
-        <input
-          type="text"
-          placeholder="Sync ID (ex.: UUID)"
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          style={{ minWidth: 200 }}
-        />
-        {connected ? (
-          <button title="Desconectar (⎋)" onClick={onDisconnect}>⎋</button>
-        ) : (
-          <button title="Conectar (⏎)" onClick={() => draft && onConnect(draft)}>⏎</button>
-        )}
-        <button onClick={onOpenCheckpoints}>Definições de Checkpoints</button>
+    <header className="topbar">
+      <h1>Peso Coach</h1>
+      <div className="actions">
+        <span className="status-dot" title={`status: ${status}`} style={{ background: dotColor }} />
+        <details className="actions">
+          <summary>Sincronização</summary>
+          <div className="panel">
+            <input
+              type="text"
+              placeholder="Sync ID (ex.: UUID)"
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              style={{ minWidth: 180 }}
+            />
+            {connected ? (
+              <button title="Desconectar (⎋)" onClick={onDisconnect}>⎋</button>
+            ) : (
+              <button title="Conectar (⏎)" onClick={() => draft && onConnect(draft)}>⏎</button>
+            )}
+            <button onClick={onOpenCheckpoints}>Checkpoints</button>
+          </div>
+        </details>
       </div>
     </header>
   );

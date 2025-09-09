@@ -56,21 +56,21 @@ export default function ChartsCard({ logs, settings, projection, fatProjection }
   return (
     <article>
       <header><strong>Gráficos</strong></header>
-      <div>
+      <div className="chart">
         <h5>Gordura % diária + média 7d + metas (hard)</h5>
-        <canvas ref={fatRef} height={140} />
+        <canvas ref={fatRef} />
       </div>
-      <div style={{ marginTop: '1rem' }}>
-        <h5>Peso diário + média 7d + metas (soft)</h5>
-        <canvas ref={dailyRef} height={140} />
+      <div className="chart" style={{ marginTop: '1rem' }}>
+        <h5>Peso noturno (pontos) + MM3/MM7 + metas</h5>
+        <canvas ref={dailyRef} />
       </div>
-      <div style={{ marginTop: '1rem' }}>
+      <div className="chart" style={{ marginTop: '1rem' }}>
         <h5>Curva projetada (Peso)</h5>
-        <canvas ref={projRef} height={140} />
+        <canvas ref={projRef} />
       </div>
-      <div style={{ marginTop: '1rem' }}>
+      <div className="chart" style={{ marginTop: '1rem' }}>
         <h5>Curva projetada (Gordura %)</h5>
-        <canvas ref={fatProjRef} height={140} />
+        <canvas ref={fatProjRef} />
       </div>
     </article>
   );

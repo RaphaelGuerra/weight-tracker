@@ -12,11 +12,17 @@ export default function DataTableCard({ logs, onEdit }: Props) {
   return (
     <article>
       <header><strong>Dados (últimos 60 dias)</strong></header>
-      <div style={{ overflowX: 'auto' }}>
+      <div className="table-wrap">
         <table>
           <thead>
             <tr>
-              <th>Data</th><th>Manhã</th><th>Noite</th><th>Dif</th><th>Média7d</th><th>Gordura %</th><th>Ações</th>
+              <th>Data</th>
+              <th className="hide-sm">Manhã</th>
+              <th>Noite</th>
+              <th className="hide-sm">Dif</th>
+              <th>Média7d</th>
+              <th className="hide-sm">Gordura %</th>
+              <th>Ações</th>
             </tr>
           </thead>
           <tbody>
@@ -27,11 +33,11 @@ export default function DataTableCard({ logs, onEdit }: Props) {
               return (
                 <tr key={d}>
                   <td>{d}</td>
-                  <td>{l?.morningKg ?? ''}</td>
+                  <td className="hide-sm">{l?.morningKg ?? ''}</td>
                   <td>{l?.nightKg ?? ''}</td>
-                  <td>{diff}</td>
+                  <td className="hide-sm">{diff}</td>
                   <td>{m != null ? m.toFixed(2) : ''}</td>
-                  <td>{l?.bodyFatPct != null ? l.bodyFatPct.toFixed(2) : ''}</td>
+                  <td className="hide-sm">{l?.bodyFatPct != null ? l.bodyFatPct.toFixed(2) : ''}</td>
                   <td><button onClick={() => onEdit({ dateISO: d, morningKg: l?.morningKg, nightKg: l?.nightKg })}>Editar</button></td>
                 </tr>
               );

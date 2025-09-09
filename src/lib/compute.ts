@@ -16,6 +16,45 @@ export function rollingMean7d(logs: DayLog[]): { dateISO: string; meanKg: number
   });
 }
 
+// Generic simple moving average helper. Allows partial windows at the start.
+export function getMM(values: number[], window: number): number[] {
+  const out: number[] = [];
+  let sum = 0;
+  for (let i = 0; i < values.length; i++) {
+    sum += values[i] ?? 0;
+    if (i >= window) sum -= values[i - window] ?? 0;
+    const count = Math.min(i + 1, window);
+    out.push(sum / count);
+  }
+  return out;
+}
+
+// Build nightly series (official metric) from logs.
+export function nightlySeries(logs: DayLog[]): { dates: string[]; values: (number | null)[] } {
+  const byDate = new Map<string, number | null>();
+  for (const l of logs) {
+    const val = typeof l.nightKg === 'number' ? l.nightKg : null;
+    byDate.set(l.dateISO, val);
+  }
+  const dates = [...byDate.keys()].sort();
+  const values = dates.map((d) => byDate.get(d) ?? null);
+  return { dates, values };
+}
+
+// Compute MM window series for a sparse series; ignores nulls by carrying forward only on existing data points.
+export function movingAverageOnSeries(series: { dates: string[]; values: (number | null)[] }, window: number): { dateISO: string; value: number | null }[] {
+  const vals: number[] = [];
+  const dates: string[] = [];
+  for (let i = 0; i < series.values.length; i++) {
+    const v = series.values[i];
+    if (v == null) continue;
+    vals.push(v);
+    dates.push(series.dates[i]!);
+  }
+  const mm = getMM(vals, window);
+  return dates.map((d, i) => ({ dateISO: d, value: mm[i]! }));
+}
+
 export function pickCurrentWeightKg(logs: DayLog[]): number | null {
   if (!logs.length) return null;
   const last = [...logs].sort((a, b) => a.dateISO.localeCompare(b.dateISO)).at(-1)!;
@@ -28,6 +67,22 @@ export function statusVsCheckpoint(weightKg: number, checkpoint: WeeklyCheckpoin
   if (weightKg <= checkpoint.highKg && weightKg >= checkpoint.lowKg) return 'ok';
   if (weightKg > checkpoint.highKg) return 'high';
   return 'warn';
+}
+
+// Nearest checkpoint considering same-week or closest future checkpoint.
+export function nearestCheckpoint(dateISO: string, cps: WeeklyCheckpoint[]): WeeklyCheckpoint | undefined {
+  const sorted = [...cps].sort((a, b) => a.endDateISO.localeCompare(b.endDateISO));
+  for (const c of sorted) if (c.endDateISO >= dateISO) return c;
+  return sorted.at(-1) ?? undefined;
+}
+
+// Status for a given date using MM3 against checkpoint high with +0.5 tolerance.
+export function statusFor(dateISO: string, mm3: number, cps: WeeklyCheckpoint[]): 'ok' | 'warn' | 'bad' {
+  const c = nearestCheckpoint(dateISO, cps);
+  if (!c) return 'warn';
+  if (mm3 <= c.highKg) return 'ok';
+  if (mm3 <= c.highKg + 0.5) return 'warn';
+  return 'bad';
 }
 
 export function findActiveCheckpoint(settings: Settings, dateISO: string): WeeklyCheckpoint | null {
@@ -59,6 +114,20 @@ export function weeklyVariationKg(logs: DayLog[]): number | null {
   const prevIdx = dates.findIndex((d) => differenceInCalendarDays(parseISO(last), parseISO(d)) === 7);
   if (prevIdx === -1) return null;
   return byDate.get(last)! - byDate.get(dates[prevIdx]!)!;
+}
+
+// Delta week for a MM series: last value minus value 7 days before (by matching dates).
+export function deltaWeek(mmSeries: { dateISO: string; value: number }[]): number | null {
+  if (!mmSeries.length) return null;
+  const last = mmSeries[mmSeries.length - 1]!;
+  const lastDate = parseISO(last.dateISO);
+  for (let i = mmSeries.length - 2; i >= 0; i--) {
+    const d = mmSeries[i]!;
+    if (differenceInCalendarDays(lastDate, parseISO(d.dateISO)) === 7) {
+      return last.value - d.value;
+    }
+  }
+  return null;
 }
 
 export function weeklyVariationFatPct(logs: DayLog[]): number | null {

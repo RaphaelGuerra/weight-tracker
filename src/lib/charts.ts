@@ -1,20 +1,25 @@
 import { Chart, ChartConfiguration } from 'chart.js/auto';
 import { DayLog, ProjectionFatPoint, ProjectionPoint, Settings } from '../types';
+import { movingAverageOnSeries, nightlySeries } from './compute';
 
-export function buildDailyChartConfig(logs: DayLog[], rolling: { dateISO: string; meanKg: number | null }[], settings: Settings): ChartConfiguration {
-  const dates = [...new Set(logs.map(l => l.dateISO))].sort();
-  const byDate = new Map<string, number>();
-  for (const l of logs) {
-    const vals = [l.morningKg, l.nightKg].filter((v): v is number => typeof v === 'number');
-    if (vals.length) byDate.set(l.dateISO, vals.reduce((a, b) => a + b, 0) / vals.length);
-  }
-  const avgMap = new Map(rolling.filter(r => r.meanKg != null).map(r => [r.dateISO, r.meanKg as number]));
-  const labels = dates;
-  const dataDaily = labels.map(d => (byDate.get(d) ?? null));
-  const dataMean = labels.map(d => (avgMap.get(d) ?? null));
+export function buildDailyChartConfig(logs: DayLog[], _rolling: { dateISO: string; meanKg: number | null }[], settings: Settings): ChartConfiguration {
+  const series = nightlySeries(logs);
+  const labels = series.dates;
+  const dataNight = series.values; // nightly values only (official metric)
+
+  const w3 = settings.trendWindowShort ?? 3;
+  const w7 = settings.trendWindowLong ?? 7;
+  const mm3 = movingAverageOnSeries(series, w3);
+  const mm7 = movingAverageOnSeries(series, w7);
+  const mm3Map = new Map(mm3.map(r => [r.dateISO, r.value]));
+  const mm7Map = new Map(mm7.map(r => [r.dateISO, r.value]));
+  const dataMM3 = labels.map(d => mm3Map.get(d) ?? null);
+  const dataMM7 = labels.map(d => mm7Map.get(d) ?? null);
+
   const datasets: ChartConfiguration['data']['datasets'] = [
-    { label: 'Peso diário', data: dataDaily, borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.2)', spanGaps: true },
-    { label: 'Peso média 7d', data: dataMean, borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,0.2)', spanGaps: true },
+    { label: 'Peso noturno (pontos)', data: dataNight, borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.2)', spanGaps: true, pointRadius: 3, showLine: false },
+    { label: 'MM3', data: dataMM3, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.2)', spanGaps: true, pointRadius: 0, borderWidth: 2 },
+    { label: 'MM7', data: dataMM7, borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.2)', spanGaps: true, pointRadius: 0, borderWidth: 3 },
     ...settings.goals.valuesKg.map((g, i) => ({
       label: settings.goals.labels?.[i] ?? `Meta ${g}`,
       data: labels.map(() => g),
