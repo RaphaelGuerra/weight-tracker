@@ -48,4 +48,4 @@ Open http://localhost:5173
 - Next ideas: weekly targets, reminders, and progress sharing
 
 ## License
-Personal portfolio project — not medical advice.
+All rights reserved. Personal portfolio project — not for production use.
