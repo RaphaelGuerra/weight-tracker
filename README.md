@@ -1,5 +1,20 @@
 # Peso Coach
 
+Last updated: 2025-10-22
+
+## Table of Contents
+
+<!-- TOC start -->
+- [What It Does](#what-it-does)
+- [How To Use](#how-to-use)
+- [How It Works](#how-it-works)
+- [Run Locally](#run-locally)
+- [Deploy (optional)](#deploy-optional)
+- [Tech Stack](#tech-stack)
+- [Status & Learnings](#status-learnings)
+- [License](#license)
+<!-- TOC end -->
+
 Simple PWA to log body weight and visualize progress with goal projections.
 
 This is a small portfolio side project for learning — lean UI, quick charts, local‑first state, and an optional month‑scoped sync flow. It is not a medical app or a production system.
