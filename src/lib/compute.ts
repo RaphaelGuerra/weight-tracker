@@ -1,4 +1,4 @@
-import { addDays, differenceInCalendarDays, isBefore, isSameDay, parseISO } from 'date-fns';
+import { addDays, differenceInCalendarDays, isBefore, parseISO } from 'date-fns';
 import { AppState, DayLog, ProjectionFatPoint, ProjectionPoint, Settings, WeeklyCheckpoint } from '../types';
 import { fmtISO, weekEnd, weekStart } from './dates';
 
@@ -176,7 +176,6 @@ export function simulateProjection(state: AppState, initialWeightKg: number, ini
     let weeklyDeficit = 0; // TDEE - intake
     for (let d = 0; d < 7; d++) {
       const date = addDays(cursor, d);
-      const dateISO = fmtISO(date);
       const inPhase1 = !isBefore(date, parseISO(p.phase1.startISO)) && !isBefore(parseISO(p.phase1.endISO), date);
       const inPhase2 = isBefore(parseISO(p.phase2.startISO), addDays(date, 1)); // from phase2.start inclusive
 
@@ -232,7 +231,6 @@ export function simulateFatProjection(
   let fm = (initialWeightKg * initialFatPct) / 100;
   let ffm = initialWeightKg - fm;
   let weight = initialWeightKg;
-  const startFFM = ffm;
 
   let cursor = weekStart(initialDateISO);
   const out: ProjectionFatPoint[] = [];

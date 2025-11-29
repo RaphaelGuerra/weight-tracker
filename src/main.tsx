@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import './app.css';
 import TopBar from './components/TopBar';
@@ -39,7 +39,7 @@ function App() {
     window.setTimeout(() => setToast(''), ms);
   };
 
-  const recalc = () => {
+  const recalc = useCallback(() => {
     const initialWeight = (() => {
       const last = [...state.logs].sort((a, b) => a.dateISO.localeCompare(b.dateISO)).at(-1);
       if (last?.nightKg != null) return last.nightKg;
@@ -58,7 +58,7 @@ function App() {
     } else {
       setFatProjection([]);
     }
-  };
+  }, [state]);
 
   const persist = (s: AppState) => {
     setState(s);
@@ -95,7 +95,7 @@ function App() {
     return withBf.length ? withBf[withBf.length-1]!.bodyFatPct! : null;
   }, [state.logs]);
 
-  React.useEffect(() => { recalc(); /* initial */ }, []);
+  React.useEffect(() => { recalc(); /* initial + state changes */ }, [recalc]);
   // Keep reactive copies of localStorage-based settings (if changed elsewhere)
   React.useEffect(() => {
     const onStorage = (e: StorageEvent) => {
