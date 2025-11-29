@@ -21,6 +21,8 @@ Simple PWA to log body weight and visualize progress with goal projections.
 
 This is a small portfolio side project for learning — lean UI, quick charts, local‑first state, and an optional month‑scoped sync flow. It is not a medical app or a production system.
 
+Live demo: none (local PWA)
+
 ## What It Does
 - Daily weight logs (morning/night) and optional body‑fat percentage
 - Today and Week views with averages and highlights
