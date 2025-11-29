@@ -11,7 +11,7 @@ Last updated: 2025-11-29
 - [Run Locally](#run-locally)
 - [Deploy (optional)](#deploy-optional)
 - [Tech Stack](#tech-stack)
-- [Status & Learnings](#status-learnings)
+- [Status & Learnings](#status--learnings)
 - [License](#license)
 <!-- TOC end -->
 
