@@ -1,7 +1,6 @@
 # Peso Coach
 
-[![Lint](https://github.com/RaphaelGuerra/weight-tracker/actions/workflows/lint.yml/badge.svg)](https://github.com/RaphaelGuerra/weight-tracker/actions/workflows/lint.yml)
-[![Security](https://github.com/RaphaelGuerra/weight-tracker/actions/workflows/security.yml/badge.svg)](https://github.com/RaphaelGuerra/weight-tracker/actions/workflows/security.yml)
+Last updated: 2025-11-30
 
 ## Table of Contents
 
@@ -15,6 +14,10 @@
 - [Status & Learnings](#status--learnings)
 - [License](#license)
 <!-- TOC end -->
+
+[![Lint](https://github.com/RaphaelGuerra/weight-tracker/actions/workflows/lint.yml/badge.svg)](https://github.com/RaphaelGuerra/weight-tracker/actions/workflows/lint.yml)
+[![Security](https://github.com/RaphaelGuerra/weight-tracker/actions/workflows/security.yml/badge.svg)](https://github.com/RaphaelGuerra/weight-tracker/actions/workflows/security.yml)
+
 
 Simple PWA to log body weight and visualize progress with goal projections.
 
