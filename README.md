@@ -1,6 +1,6 @@
 # Peso Coach
 
-Last updated: 2026-01-06
+Last updated: 2026-01-08
 
 ## Table of Contents
 
