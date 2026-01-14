@@ -15,6 +15,12 @@ self.addEventListener('activate', (event) => {
   })());
 });
 
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
 // Network-first for index.html, cache-first for /assets/
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
@@ -38,4 +44,3 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 });
-
