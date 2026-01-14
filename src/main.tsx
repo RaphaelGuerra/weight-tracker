@@ -16,42 +16,6 @@ import { getBaseUrl, getSyncId, loadRemoteMonth, monthFromISO, saveLocalMonthDeb
 import { simulateProjection, simulateFatProjection } from './lib/compute';
 
 const loadInitial = (): AppState => {
-
-  React.useEffect(() => {
-    if (!('serviceWorker' in navigator)) return undefined;
-    let refreshing = false;
-    navigator.serviceWorker.register('/sw.js').then((reg) => {
-      swRegRef.current = reg;
-      if (reg.waiting) setUpdateReady(true);
-      reg.addEventListener('updatefound', () => {
-        const newWorker = reg.installing;
-        if (!newWorker) return;
-        newWorker.addEventListener('statechange', () => {
-          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            setUpdateReady(true);
-          }
-        });
-      });
-    }).catch(() => {});
-
-    const onControllerChange = () => {
-      if (refreshing) return;
-      refreshing = true;
-      window.location.reload();
-    };
-    navigator.serviceWorker.addEventListener('controllerchange', onControllerChange);
-    return () => navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
-  }, []);
-
-  const applyUpdate = () => {
-    const reg = swRegRef.current;
-    if (reg?.waiting) {
-      reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-    } else {
-      window.location.reload();
-    }
-  };
-
   return (
     loadState() || {
       logs: [],
@@ -69,7 +33,7 @@ function App() {
   const [activeSyncId, setActiveSyncId] = useState<string | null>(() => getSyncId());
   const [baseUrl, setBaseUrlState] = useState<string | null>(() => getBaseUrl());
   const [toast, setToast] = useState<string>('');
-
+  const [lastSyncAt, setLastSyncAt] = useState<number | null>(null);
   const [updateReady, setUpdateReady] = useState(false);
   const swRegRef = React.useRef<ServiceWorkerRegistration | null>(null);
 
@@ -110,7 +74,10 @@ function App() {
     saveLocalMonthDebounced(month, { logs: monthLogs });
     const syncId = activeSyncId ?? undefined;
     const base = baseUrl ?? undefined;
-    if (syncId && base) saveRemoteMonthDebounced(base, syncId, month, { logs: monthLogs });
+    if (syncId && base) {
+      saveRemoteMonthDebounced(base, syncId, month, { logs: monthLogs });
+      setLastSyncAt(Date.now());
+    }
   };
 
   const onSaveLog = (log: DayLog) => {
@@ -157,18 +124,25 @@ function App() {
         setState(next);
         saveState(next);
         setSyncStatus('ok');
+        setLastSyncAt(Date.now());
         showToast('Sync carregado');
       } else {
         setSyncStatus('error'); // fallback to local content (already in state)
+        setLastSyncAt(Date.now());
         showToast('Falha de sync');
       }
-    }).catch(() => { setSyncStatus('error'); showToast('Falha de sync'); });
+    }).catch(() => { setSyncStatus('error'); setLastSyncAt(Date.now()); showToast('Falha de sync'); });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeSyncId, baseUrl, monthFromISO((state.logs.at(-1)?.dateISO ?? new Date().toISOString()))]);
 
   const handleConnect = (id: string) => {
-    setSyncId(id);
-    setActiveSyncId(id);
+    const cleaned = (id || '').trim();
+    if (cleaned.length < 6) {
+      showToast('Sync ID invalido');
+      return;
+    }
+    setSyncId(cleaned);
+    setActiveSyncId(cleaned);
     if (!getBaseUrl()) {
       setBaseUrl(window.location.origin);
       setBaseUrlState(window.location.origin);
@@ -183,7 +157,6 @@ function App() {
     setSyncStatus('idle');
     showToast('Sync desconectado');
   };
-
 
   React.useEffect(() => {
     if (!('serviceWorker' in navigator)) return undefined;
@@ -228,6 +201,7 @@ function App() {
         status={activeSyncId ? syncStatus : 'off'}
         onConnect={handleConnect}
         onDisconnect={handleDisconnect}
+        lastSyncAt={lastSyncAt}
       />
       <section className="cards">
         <TodayCard onSave={onSaveLog} />
@@ -241,7 +215,6 @@ function App() {
       {toast && (
         <div style={{ position: 'fixed', bottom: 16, left: '50%', transform: 'translateX(-50%)', background: '#111827', color: 'white', padding: '6px 10px', borderRadius: 6, fontSize: 12, boxShadow: '0 2px 6px rgba(0,0,0,0.25)' }}>{toast}</div>
       )}
-
       {updateReady && (
         <div className="update-banner" role="status" aria-live="polite">
           <span>Atualizacao disponivel. Recarregue o app.</span>

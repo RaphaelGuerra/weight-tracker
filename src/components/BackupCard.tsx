@@ -17,6 +17,15 @@ export default function BackupCard({ state, onState }: Props) {
   const [syncId, setSyncIdLocal] = useState<string>(getSyncId() ?? '');
   const pagesConfigured = Boolean(pagesBase && syncId);
 
+  const isValidUrl = (value: string) => {
+    try {
+      const parsed = new URL(value);
+      return ['http:', 'https:'].includes(parsed.protocol);
+    } catch {
+      return false;
+    }
+  };
+
   const doExport = () => {
     const blob = new Blob([exportJSON({ ...state, workerURL: url || undefined, bearerToken: token || undefined })], { type: 'application/json' });
     const a = document.createElement('a');
@@ -73,8 +82,16 @@ export default function BackupCard({ state, onState }: Props) {
           </div>
         </div>
         <div className="grid">
-          <button onClick={() => { setSyncId(syncId || null); setMsg('Sync ID atualizado.'); }}>Salvar Sync ID</button>
-          <button onClick={() => { setBaseUrl(pagesBase || null); setMsg('Base URL salva.'); }}>Salvar Base URL</button>
+          <button onClick={() => {
+            if (!syncId || syncId.trim().length < 6) { setMsg('Sync ID invalido.'); return; }
+            setSyncId(syncId.trim() || null);
+            setMsg('Sync ID atualizado.');
+          }}>Salvar Sync ID</button>
+          <button onClick={() => {
+            if (!pagesBase || !isValidUrl(pagesBase)) { setMsg('Base URL invalida.'); return; }
+            setBaseUrl(pagesBase || null);
+            setMsg('Base URL salva.');
+          }}>Salvar Base URL</button>
           <button onClick={async () => {
             const id = syncId || getSyncId();
             if (!id || !pagesBase) { setMsg('Preencha base URL e Sync ID.'); return; }

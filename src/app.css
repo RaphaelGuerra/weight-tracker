@@ -42,6 +42,7 @@ small { font-size: 0.85rem; }
 .topbar h1 { margin: 0; font-size: 1.1rem; letter-spacing: 0.2px; }
 .topbar .actions { display:flex; align-items:center; gap: 8px; }
 .topbar .status-dot { width: 10px; height: 10px; border-radius: 9999px; display:inline-block; box-shadow: 0 0 0 2px #0006 inset; }
+.topbar .sync-meta { font-size: 0.75rem; color: var(--brand-text-dim); }
 .topbar details.actions { margin-left: auto; }
 .topbar details[open] { background: transparent; }
 .topbar details > summary { list-style: none; cursor: pointer; }
@@ -120,4 +121,3 @@ button.primary:hover, button[type="submit"]:hover { filter: brightness(1.05); }
   padding: 6px 10px;
   min-height: 32px;
 }
-

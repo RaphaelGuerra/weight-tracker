@@ -8,9 +8,10 @@ type Props = {
   status: SyncStatus;
   onConnect: (id: string) => void;
   onDisconnect: () => void;
+  lastSyncAt: number | null;
 };
 
-export default function TopBar({ onOpenCheckpoints, syncId, status, onConnect, onDisconnect }: Props) {
+export default function TopBar({ onOpenCheckpoints, syncId, status, onConnect, onDisconnect, lastSyncAt }: Props) {
   const [draft, setDraft] = useState<string>(syncId ?? '');
   const connected = Boolean(syncId);
 
@@ -26,11 +27,17 @@ export default function TopBar({ onOpenCheckpoints, syncId, status, onConnect, o
     }
   }, [status]);
 
+  const lastSyncLabel = useMemo(() => {
+    if (!lastSyncAt) return '—';
+    return new Date(lastSyncAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  }, [lastSyncAt]);
+
   return (
     <header className="topbar">
       <h1>Peso Coach</h1>
       <div className="actions">
         <span className="status-dot" title={`status: ${status}`} style={{ background: dotColor }} />
+        <span className="sync-meta">Ultimo sync: {lastSyncLabel}</span>
         <details className="actions">
           <summary>Sincronização</summary>
           <div className="panel">
