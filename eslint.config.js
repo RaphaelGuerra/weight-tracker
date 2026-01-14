@@ -21,6 +21,7 @@ export default [
       },
       globals: {
         window: "readonly",
+        navigator: "readonly",
         document: "readonly",
         fetch: "readonly",
         localStorage: "readonly",
@@ -32,6 +33,7 @@ export default [
         HTMLCanvasElement: "readonly",
         CanvasRenderingContext2D: "readonly",
         StorageEvent: "readonly",
+        ServiceWorkerRegistration: "readonly",
       },
     },
     plugins: {
