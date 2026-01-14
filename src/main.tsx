@@ -16,6 +16,42 @@ import { getBaseUrl, getSyncId, loadRemoteMonth, monthFromISO, saveLocalMonthDeb
 import { simulateProjection, simulateFatProjection } from './lib/compute';
 
 const loadInitial = (): AppState => {
+
+  React.useEffect(() => {
+    if (!('serviceWorker' in navigator)) return undefined;
+    let refreshing = false;
+    navigator.serviceWorker.register('/sw.js').then((reg) => {
+      swRegRef.current = reg;
+      if (reg.waiting) setUpdateReady(true);
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing;
+        if (!newWorker) return;
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            setUpdateReady(true);
+          }
+        });
+      });
+    }).catch(() => {});
+
+    const onControllerChange = () => {
+      if (refreshing) return;
+      refreshing = true;
+      window.location.reload();
+    };
+    navigator.serviceWorker.addEventListener('controllerchange', onControllerChange);
+    return () => navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
+  }, []);
+
+  const applyUpdate = () => {
+    const reg = swRegRef.current;
+    if (reg?.waiting) {
+      reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+    } else {
+      window.location.reload();
+    }
+  };
+
   return (
     loadState() || {
       logs: [],
@@ -33,6 +69,9 @@ function App() {
   const [activeSyncId, setActiveSyncId] = useState<string | null>(() => getSyncId());
   const [baseUrl, setBaseUrlState] = useState<string | null>(() => getBaseUrl());
   const [toast, setToast] = useState<string>('');
+
+  const [updateReady, setUpdateReady] = useState(false);
+  const swRegRef = React.useRef<ServiceWorkerRegistration | null>(null);
 
   const showToast = (t: string, ms = 1800) => {
     setToast(t);
@@ -145,6 +184,42 @@ function App() {
     showToast('Sync desconectado');
   };
 
+
+  React.useEffect(() => {
+    if (!('serviceWorker' in navigator)) return undefined;
+    let refreshing = false;
+    navigator.serviceWorker.register('/sw.js').then((reg) => {
+      swRegRef.current = reg;
+      if (reg.waiting) setUpdateReady(true);
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing;
+        if (!newWorker) return;
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            setUpdateReady(true);
+          }
+        });
+      });
+    }).catch(() => {});
+
+    const onControllerChange = () => {
+      if (refreshing) return;
+      refreshing = true;
+      window.location.reload();
+    };
+    navigator.serviceWorker.addEventListener('controllerchange', onControllerChange);
+    return () => navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
+  }, []);
+
+  const applyUpdate = () => {
+    const reg = swRegRef.current;
+    if (reg?.waiting) {
+      reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+    } else {
+      window.location.reload();
+    }
+  };
+
   return (
     <>
       <TopBar
@@ -165,6 +240,13 @@ function App() {
       <footer className="footer">PWA: dados locais no navegador; exporte JSON para portabilidade.</footer>
       {toast && (
         <div style={{ position: 'fixed', bottom: 16, left: '50%', transform: 'translateX(-50%)', background: '#111827', color: 'white', padding: '6px 10px', borderRadius: 6, fontSize: 12, boxShadow: '0 2px 6px rgba(0,0,0,0.25)' }}>{toast}</div>
+      )}
+
+      {updateReady && (
+        <div className="update-banner" role="status" aria-live="polite">
+          <span>Atualizacao disponivel. Recarregue o app.</span>
+          <button onClick={applyUpdate}>Atualizar</button>
+        </div>
       )}
       <CheckpointsModal open={modalOpen} onClose={() => setModalOpen(false)} checkpoints={state.settings.checkpoints} fatCheckpoints={state.settings.fatCheckpoints} onChange={onCheckpointsChange} onFatChange={(c)=>persist({ ...state, settings: { ...state.settings, fatCheckpoints: c } })} />
     </>
