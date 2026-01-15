@@ -38,9 +38,13 @@ export default function BackupCard({ state, onState }: Props) {
     const file = f ?? fileRef.current?.files?.[0];
     if (!file) return;
     const text = await file.text();
-    const data = importJSON(text);
-    onState({ ...data, workerURL: url || undefined, bearerToken: token || undefined });
-    setMsg('Importado com sucesso.');
+    try {
+      const data = importJSON(text);
+      onState({ ...data, workerURL: url || undefined, bearerToken: token || undefined });
+      setMsg('Importado com sucesso.');
+    } catch {
+      setMsg('Falha ao importar JSON.');
+    }
   };
 
   const doBackup = async () => {

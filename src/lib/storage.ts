@@ -1,27 +1,64 @@
 import { AppState } from '../types';
 
 const KEY = 'peso-coach-state-v1';
+const LEGACY_KEYS = ['peso-coach-state', 'peso-coach.state'];
+const STATE_SCHEMA_VERSION = 1;
 
-export function saveState(state: AppState) {
-  localStorage.setItem(KEY, JSON.stringify(state));
+type PersistedState = { version: number; state: AppState };
+
+function normalizeState(input: unknown): AppState | null {
+  if (!input || typeof input !== 'object') return null;
+  const wrapped = input as PersistedState;
+  if (wrapped.state && typeof wrapped.state === 'object') return wrapped.state;
+  const legacy = input as AppState;
+  if (legacy.logs && legacy.settings) return legacy;
+  return null;
 }
 
-export function loadState(): AppState | null {
-  const raw = localStorage.getItem(KEY);
-  if (!raw) return null;
+function parseState(raw: string): AppState | null {
   try {
-    return JSON.parse(raw) as AppState;
+    return normalizeState(JSON.parse(raw));
   } catch {
     return null;
   }
 }
 
+function migrateLegacyState(): AppState | null {
+  for (const key of LEGACY_KEYS) {
+    const raw = localStorage.getItem(key);
+    if (!raw) continue;
+    const state = parseState(raw);
+    if (!state) continue;
+    saveState(state);
+    localStorage.removeItem(key);
+    return state;
+  }
+  return null;
+}
+
+export function saveState(state: AppState) {
+  const payload: PersistedState = { version: STATE_SCHEMA_VERSION, state };
+  localStorage.setItem(KEY, JSON.stringify(payload));
+}
+
+export function loadState(): AppState | null {
+  const raw = localStorage.getItem(KEY);
+  if (raw) {
+    const state = parseState(raw);
+    if (state) return state;
+  }
+  return migrateLegacyState();
+}
+
 export function exportJSON(state: AppState): string {
-  return JSON.stringify(state, null, 2);
+  return JSON.stringify({ version: STATE_SCHEMA_VERSION, state }, null, 2);
 }
 
 export function importJSON(json: string): AppState {
-  return JSON.parse(json) as AppState;
+  const parsed = JSON.parse(json) as unknown;
+  const state = normalizeState(parsed);
+  if (!state) throw new Error('Invalid import JSON');
+  return state;
 }
 
 export async function remoteBackup(state: AppState): Promise<{ ok: boolean; error?: string }>{
@@ -53,4 +90,3 @@ export async function remoteRestore(workerURL?: string, bearerToken?: string): P
     return null;
   }
 }
-
